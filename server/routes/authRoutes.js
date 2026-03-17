@@ -1,27 +1,22 @@
 const express = require("express")
 const router = express.Router()
 
-const { signup, login, uploadResume, uploadProfilePic } = require("../controllers/authController")
+const {
+  signup,
+  login,
+  updateProfile,
+  uploadResume,
+  uploadProfilePic
+} = require("../controllers/authController")
 
 const auth = require("../middleware/authMiddleware")
 const upload = require("../middleware/resumeUpload")
 
-// =======================
-// Auth Routes
-// =======================
-
-// Signup
 router.post("/signup", signup)
-
-// Login
 router.post("/login", login)
 
+router.put("/update-profile", auth, updateProfile)
 
-// =======================
-// Upload Routes
-// =======================
-
-// Upload Resume
 router.post(
   "/upload-resume",
   auth,
@@ -29,7 +24,6 @@ router.post(
   uploadResume
 )
 
-// Upload Profile Picture
 router.post(
   "/upload-profile",
   auth,

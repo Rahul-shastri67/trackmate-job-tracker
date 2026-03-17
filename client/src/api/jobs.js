@@ -4,50 +4,22 @@ const API = axios.create({
   baseURL: "http://localhost:5000/api"
 })
 
-// Automatically attach token
 API.interceptors.request.use((req) => {
-
   const token = localStorage.getItem("token")
-
   if (token) {
     req.headers.Authorization = `Bearer ${token}`
   }
-
   return req
 })
 
+export const getJobs = () =>
+  API.get("/jobs")
 
-// ======================
-// Get Jobs
-// ======================
+export const createJob = (job) =>
+  API.post("/jobs", job)
 
-export const getJobs = () => {
-  return API.get("/jobs")
-}
+export const deleteJob = (id) =>
+  API.delete(`/jobs/${id}`)
 
-
-// ======================
-// Create Job
-// ======================
-
-export const createJob = (job) => {
-  return API.post("/jobs", job)
-}
-
-
-// ======================
-// Delete Job
-// ======================
-
-export const deleteJob = (id) => {
-  return API.delete(`/jobs/${id}`)
-}
-
-
-// ======================
-// Update Job
-// ======================
-
-export const updateJob = (id, job) => {
-  return API.put(`/jobs/${id}`, job)
-}
+export const updateJob = (id, job) =>
+  API.put(`/jobs/${id}`, job)

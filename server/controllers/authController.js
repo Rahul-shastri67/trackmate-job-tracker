@@ -8,45 +8,27 @@ const cloudinary = require("../config/cloudinary")
 // ==========================
 
 exports.signup = async (req, res) => {
-
   try {
-
     const { name, email, password } = req.body
 
     if (!name || !email || !password) {
-      return res.status(400).json({
-        message: "All fields are required"
-      })
+      return res.status(400).json({ message: "All fields are required" })
     }
 
     const userExists = await User.findOne({ email })
-
     if (userExists) {
-      return res.status(400).json({
-        message: "User already exists"
-      })
+      return res.status(400).json({ message: "User already exists" })
     }
 
     const hashedPassword = await bcrypt.hash(password, 10)
 
-    await User.create({
-      name,
-      email,
-      password: hashedPassword
-    })
+    await User.create({ name, email, password: hashedPassword })
 
-    res.status(201).json({
-      message: "User created successfully"
-    })
+    res.status(201).json({ message: "User created successfully" })
 
   } catch (error) {
-
-    res.status(500).json({
-      message: error.message
-    })
-
+    res.status(500).json({ message: error.message })
   }
-
 }
 
 
@@ -55,31 +37,21 @@ exports.signup = async (req, res) => {
 // ==========================
 
 exports.login = async (req, res) => {
-
   try {
-
     const { email, password } = req.body
 
     if (!email || !password) {
-      return res.status(400).json({
-        message: "Email and password required"
-      })
+      return res.status(400).json({ message: "Email and password required" })
     }
 
     const user = await User.findOne({ email })
-
     if (!user) {
-      return res.status(400).json({
-        message: "Invalid credentials"
-      })
+      return res.status(400).json({ message: "Invalid credentials" })
     }
 
     const isMatch = await bcrypt.compare(password, user.password)
-
     if (!isMatch) {
-      return res.status(400).json({
-        message: "Invalid credentials"
-      })
+      return res.status(400).json({ message: "Invalid credentials" })
     }
 
     const token = jwt.sign(
@@ -103,13 +75,46 @@ exports.login = async (req, res) => {
     })
 
   } catch (error) {
+    res.status(500).json({ message: error.message })
+  }
+}
 
-    res.status(500).json({
-      message: error.message
+
+// ==========================
+// Update Profile
+// ==========================
+
+exports.updateProfile = async (req, res) => {
+  try {
+    const { name, email, phone, location, skills } = req.body
+
+    const updatedUser = await User.findByIdAndUpdate(
+      req.userId,
+      { name, email, phone, location, skills },
+      { new: true }
+    )
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: "User not found" })
+    }
+
+    res.json({
+      message: "Profile updated successfully",
+      user: {
+        id: updatedUser._id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        phone: updatedUser.phone,
+        location: updatedUser.location,
+        skills: updatedUser.skills,
+        profilePic: updatedUser.profilePic,
+        resume: updatedUser.resume
+      }
     })
 
+  } catch (error) {
+    res.status(500).json({ message: error.message })
   }
-
 }
 
 
@@ -118,61 +123,40 @@ exports.login = async (req, res) => {
 // ==========================
 
 exports.uploadResume = async (req, res) => {
-
   try {
-
     if (!req.file) {
-      return res.status(400).json({
-        message: "No file uploaded"
-      })
+      return res.status(400).json({ message: "No file uploaded" })
     }
 
     const stream = cloudinary.uploader.upload_stream(
-      {
-        resource_type: "auto",
-        folder: "trackmate/resumes"
-      },
+      { resource_type: "auto", folder: "trackmate/resumes" },
       async (error, uploaded) => {
-
         if (error) {
-          console.log("Cloudinary Error:", error)
-          return res.status(500).json({
-            message: "Upload failed"
-          })
+          return res.status(500).json({ message: "Upload failed" })
         }
 
         const user = await User.findByIdAndUpdate(
           req.userId,
           { resume: uploaded.secure_url },
-          { returnDocument: "after" }
+          { new: true }
         )
 
         if (!user) {
-          return res.status(404).json({
-            message: "User not found"
-          })
+          return res.status(404).json({ message: "User not found" })
         }
 
         res.json({
           message: "Resume uploaded successfully",
-          resume: user.resume
+          resume: uploaded.secure_url
         })
-
       }
     )
 
     stream.end(req.file.buffer)
 
   } catch (error) {
-
-    console.log(error)
-
-    res.status(500).json({
-      message: "Upload error"
-    })
-
+    res.status(500).json({ message: error.message })
   }
-
 }
 
 
@@ -181,50 +165,34 @@ exports.uploadResume = async (req, res) => {
 // ==========================
 
 exports.uploadProfilePic = async (req, res) => {
-
   try {
-
     if (!req.file) {
-      return res.status(400).json({
-        message: "No image uploaded"
-      })
+      return res.status(400).json({ message: "No image uploaded" })
     }
 
     const stream = cloudinary.uploader.upload_stream(
-      {
-        folder: "trackmate/profile"
-      },
+      { folder: "trackmate/profile" },
       async (error, uploaded) => {
-
         if (error) {
-          console.log(error)
-          return res.status(500).json({
-            message: "Image upload failed"
-          })
+          return res.status(500).json({ message: "Image upload failed" })
         }
 
         const user = await User.findByIdAndUpdate(
           req.userId,
           { profilePic: uploaded.secure_url },
-          { returnDocument: "after" }
+          { new: true }
         )
 
         res.json({
           message: "Profile picture uploaded",
-          profilePic: user.profilePic
+          profilePic: uploaded.secure_url
         })
-
       }
     )
 
     stream.end(req.file.buffer)
 
   } catch (error) {
-
-    res.status(500).json({
-      message: error.message
-    })
-
+    res.status(500).json({ message: error.message })
   }
-
 }
